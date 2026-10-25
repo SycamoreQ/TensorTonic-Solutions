@@ -8,7 +8,7 @@ def logsumexp_kernel(x_ptr, out_ptr, x_row_stride, n_cols, BLOCK_SIZE: tl.conste
     i = tl.program_id(axis=0) 
     j = tl.arange(0, BLOCK_SIZE)
 
-    ptr = x_ptr + (i*x_row_stride) + j 
+    ptr = x_ptr + (i*x_row_stride) + j
 
     mask = j < n_cols
 
