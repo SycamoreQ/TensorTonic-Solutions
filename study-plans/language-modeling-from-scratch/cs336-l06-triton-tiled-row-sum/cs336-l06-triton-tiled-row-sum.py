@@ -7,7 +7,7 @@ def tiled_row_sum_kernel(x_ptr, out_ptr, n_cols, row_stride, col_stride, BLOCK_S
     i = tl.program_id(axis=0)
     row_start_ptr = x_ptr + (i * row_stride)
 
-    acc = tl.zeros((BLOCK_SIZE,), dtype=tl.float32)
+    acc = tl.zeros((BLOCK_SIZE,), dtype=tl.float64)
 
     for col_offset in range(0, n_cols, BLOCK_SIZE):
         j = col_offset + tl.arange(0, BLOCK_SIZE)
@@ -19,8 +19,8 @@ def tiled_row_sum_kernel(x_ptr, out_ptr, n_cols, row_stride, col_stride, BLOCK_S
         acc += chunk.to(tl.float32)
 
     row_sum = tl.sum(acc, axis=0)
-    tl.store(out_ptr + i, row_sum)
-
+    tl.atomic_add(out_ptr + i, row_sum.to(tl.float32))
+    
 def solve(x: torch.Tensor, out: torch.Tensor, tile_size: int) -> None:
     if x.ndim != 2 or out.ndim != 1 or out.shape[0] != x.shape[0]:
         raise ValueError("x must be a matrix and out must have one value per row")
@@ -35,6 +35,7 @@ def solve(x: torch.Tensor, out: torch.Tensor, tile_size: int) -> None:
     if x.shape[1] == 0:
         out.zero_()
         return
+    out.zero_()
     kernel_x = x.to(torch.float32) if x.dtype == torch.bfloat16 else x
     grid = (x.shape[0],)
     tiled_row_sum_kernel[grid](
