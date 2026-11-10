@@ -71,22 +71,3 @@ def solve(A: torch.Tensor, B: torch.Tensor, out: torch.Tensor) -> None:
         BLOCK_M=BLOCK_M, BLOCK_N=BLOCK_N, BLOCK_K=BLOCK_K,
         GROUP_SIZE_M=GROUP_SIZE_M,
     )
-
-def solve(A: torch.Tensor, B: torch.Tensor, out: torch.Tensor) -> None:
-    """Launch grouped_matmul_kernel with a 1D grid and grouped pid remap."""
-    M, K = A.shape
-    K2, N = B.shape
-    BLOCK_M = 64
-    BLOCK_N = 64
-    BLOCK_K = 32
-    GROUP_SIZE_M = 8
-    grid = (triton.cdiv(M, BLOCK_M) * triton.cdiv(N, BLOCK_N),)
-    grouped_matmul_kernel[grid](
-        A, B, out,
-        M, N, K,
-        A.stride(0), A.stride(1),
-        B.stride(0), B.stride(1),
-        out.stride(0), out.stride(1),
-        BLOCK_M=BLOCK_M, BLOCK_N=BLOCK_N, BLOCK_K=BLOCK_K,
-        GROUP_SIZE_M=GROUP_SIZE_M,
-    )
